@@ -1,5 +1,6 @@
 import telebot
 import json
+import datetime
 
 # import sched, time
 
@@ -43,7 +44,7 @@ def send_poll(chat_id: int):
         False,
     )
 
-    botSettings.lastSentPollID = sentPoll.message_id
+    botSettings['lastSentPollID'] = sentPoll.message_id
     bot.pin_chat_message(chat_id, sentPoll.message_id)
     return sentPoll
 
@@ -52,9 +53,10 @@ def send_poll(chat_id: int):
 def toggle_autopoll(message: telebot.types.Message):
 
     if message.text == "/autopollon":
-        botSettings.autoSendPoll = True
+        botSettings['autoSendPoll'] = True
     elif message.text == "autopolloff":
-        botSettings.autoSendPoll = False
+        botSettings['autoSendPoll'] = False
+    save_message(message)
 
     save_settings_to_file()
 
@@ -89,7 +91,7 @@ def membership_update_handler(chat_member_updated: telebot.types.ChatMemberUpdat
 
 def save_message(message: telebot.types.Message):
     with open("messages.json", "a", encoding="utf-8") as f:
-        json.dump("/n" + message.json, f, indent=4, ensure_ascii=False)
+        json.dump(message.json, f, indent=4, ensure_ascii=False)
 
 
 def save_settings_to_file():
