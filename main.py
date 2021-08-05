@@ -1,12 +1,14 @@
 import telebot
-import json, sched, time
+import json
+
+# import sched, time
 
 # https://api.telegram.org/bot***REMOVED***/getupdates
 
 try:
     f = open("settings.json")
     botSettings = json.load(f)
-finally:
+except Exception:
     botSettings = {
         "groupID": None,
         "lastSentPollID": None,
@@ -16,6 +18,10 @@ finally:
 
 
 bot = telebot.TeleBot("***REMOVED***")
+pollSendTaskID = 0
+
+
+# Command and update handlers
 
 
 @bot.message_handler(commands=["poll"])
@@ -78,6 +84,9 @@ def membership_update_handler(chat_member_updated: telebot.types.ChatMemberUpdat
     botSettings.groupID = chat_member_updated.chat.id
 
 
+# Other functions
+
+
 def save_message(message: telebot.types.Message):
     with open("messages.json", "a", encoding="utf-8") as f:
         json.dump("/n" + message.json, f, indent=4, ensure_ascii=False)
@@ -88,7 +97,7 @@ def save_settings_to_file():
         json.dump(botSettings, f)
 
 
-pollScheduler = sched.scheduler(time.time, time.sleep)
-pollScheduler.enterabs(time.time() + 60, 1, send_poll, (botSettings.groupID))
+# pollScheduler = sched.scheduler(time.time, time.sleep)
+# pollScheduler.enterabs(time.time() + 60, 1, send_poll, (botSettings.groupID))
 
 bot.polling(True, 2)
