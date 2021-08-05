@@ -50,7 +50,11 @@ def reply_to_help(message):
     reply = bot.send_message(
         message.from_user.id,
         """Я ежедневно высылаю в группу опросник с вопросом "будем ли мы сегодня играть".
-        Допустимые команды: /help, /poll, /autopollon, /autopolloff""",
+        Допустимые команды:
+            /help - эта подсказка
+            /poll - инициировать новый опрос
+            /autopollon - включить автоматическую отправку опроса
+            /autopolloff - отключить автоматическую отправку опроса""",
     )
     save_message(reply)
 
