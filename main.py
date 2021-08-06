@@ -39,9 +39,14 @@ def toggle_autopoll(message: telebot.types.Message):
 
     if message.text == "/autopollon":
         botSettings["autoSendPoll"] = True
-    elif message.text == "autopolloff":
+    elif message.text == "/autopolloff":
         botSettings["autoSendPoll"] = False
     save_message(message)
+
+    bot.send_message(
+        message.chat.id,
+        f'Автоматический опрос: {botSettings["autoSendPoll"]}'
+    )
 
     save_settings_to_file()
 
