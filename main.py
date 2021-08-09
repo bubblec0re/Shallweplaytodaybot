@@ -9,14 +9,15 @@ import datetime as dt
 #
 bot = telebot.TeleBot("***REMOVED***")
 try:
-    f = open("settings.json")
-    botSettings = json.load(f)
+    with open("settings.json") as f:
+        botSettings = json.load(f)
 except Exception:
     botSettings = {
         "groupID": None,
         "lastSentPollID": None,
         "autoSendPoll": False,
         "timeForPoll": 20,
+        "lastManualPollTime": None
     }
 pollSendTaskID = 0
 
@@ -28,25 +29,35 @@ def poll_reply(message: telebot.types.Message):
 
     save_message(message)
 
+    try:
+        bot.unpin_chat_message(botSettings['groupID'],botSettings['lastSentPollID'])
+    except Exception:
+        pass
+
     chat_id = message.chat.id
     reply = send_poll(chat_id)
+    botSettings['lastManualPollTime'] = dt.datetime.utcnow()
     schedule_poll_unpin()
     save_message(reply)
+   
 
 
 @bot.message_handler(commands=["autopollon", "autopolloff"])
 def toggle_autopoll(message: telebot.types.Message):
 
-    if message.text == "/autopollon":
+    if message.text.startswith("/autopollon"):
         botSettings["autoSendPoll"] = True
-    elif message.text == "/autopolloff":
+    elif message.text.startswith("/autopolloff"):
         botSettings["autoSendPoll"] = False
     save_message(message)
 
-    bot.send_message(
+    reply = bot.send_message(
         message.chat.id,
-        f'Автоматический опрос: {botSettings["autoSendPoll"]}'
+        f"""Автоматический опрос {'включен' if botSettings['autoSendPoll'] else 'выключен'}.
+    Время автоматического опроса: {botSettings['timeForPoll']}:00.
+    Следующий автоматический опрос в: {next_datetime(dt.datetime.utcnow(), hour=botSettings["timeForPoll"], minute=0, second=0)}"""
     )
+    save_message(reply)
 
     save_settings_to_file()
 
@@ -58,30 +69,32 @@ def reply_to_help(message: telebot.types.Message):
     reply = bot.send_message(
         message.chat.id,
         """Я ежедневно высылаю в группу опросник с вопросом "будем ли мы сегодня играть".
-        Допустимые команды:
-            /help - эта подсказка
-            /poll - инициировать новый опрос
-            /autopollon - включить автоматическую отправку опроса
-            /autopolloff - отключить автоматическую отправку опроса""",
+Допустимые команды:
+    /help - эта подсказка
+    /poll - инициировать новый опрос
+    /autopollon - включить автоматическую отправку опроса
+    /autopolloff - отключить автоматическую отправку опроса""",
     )
     save_message(reply)
 
 
 @bot.my_chat_member_handler()
 def membership_update_handler(chat_member_updated: telebot.types.ChatMemberUpdated):
-    with open("updates.json", "a", encoding="utf-8") as f:
-        chat_info = vars(chat_member_updated.chat)
-        chat_info["AmMember"] = chat_member_updated.new_chat_member.is_member
-        json.dump(chat_info, f, indent=4, ensure_ascii=False)
-    botSettings["groupID"] = chat_member_updated.chat.id
-    save_settings_to_file()
+    # with open("updates.json", "a", encoding="utf-8") as f:
+    #     chat_info = vars(chat_member_updated.chat)
+    #     chat_info["AmMember"] = chat_member_updated.new_chat_member.is_member
+    #     json.dump(chat_info, f, indent=4, ensure_ascii=False)
+    if (chat_member_updated.new_chat_member.is_member):
+        botSettings["groupID"] = chat_member_updated.chat.id
+        save_settings_to_file()
 
 
 # Other functions
 #
 def save_message(message: telebot.types.Message):
-    with open("messages.json", "a", encoding="utf-8") as f:
-        json.dump(message.json, f, indent=4, ensure_ascii=False)
+    # with open("messages.json", "a", encoding="utf-8") as f:
+    #     json.dump(message.json, f, indent=4, ensure_ascii=False)
+    print(f"{dt.datetime.fromtimestamp(message.date)}: сообщение: {message.text} от {message.from_user.username}")
 
 
 def save_settings_to_file():
@@ -107,10 +120,9 @@ def send_scheduled_poll():
         botSettings["lastSentPollID"] = sentPoll.message_id
         bot.pin_chat_message(botSettings["groupID"], sentPoll.message_id)
 
-    next_time = dt.datetime.timestamp(
-        next_datetime(dt.datetime.utcnow(), hour=botSettings["timeForPoll"])
-    )
-    pollScheduler.enterabs(next_time, 1, send_scheduled_poll)
+    next_time = next_datetime(dt.datetime.utcnow(), hour=botSettings["timeForPoll"], minute=0, second=0)
+    print(f'Время следующего автоматического опроса: {next_time}')
+    pollScheduler.enterabs(dt.datetime.timestamp(next_time), 1, send_scheduled_poll)
     schedule_poll_unpin()
     save_settings_to_file()
 
@@ -132,6 +144,7 @@ def send_poll(chat_id: int):
 
     botSettings["lastSentPollID"] = sentPoll.message_id
     bot.pin_chat_message(chat_id, sentPoll.message_id)
+    schedule_poll_unpin()
     save_settings_to_file()
     return sentPoll
 
@@ -145,9 +158,10 @@ def next_datetime(current: dt.datetime, hour: int, **kwargs) -> dt.datetime:
 
 def schedule_poll_unpin():
     now = dt.datetime.utcnow()
-    next_time = dt.datetime.timestamp(next_datetime(now, hour=0))
+    next_time = next_datetime(now, hour=0, minute=0, second=0)
+    print(f"Время открепления опроса с ID {botSettings['lastSentPollID']}: {next_time}")
     pollScheduler.enter(
-        next_time,
+        dt.datetime.timestamp(next_time),
         1,
         bot.unpin_chat_message,
         (botSettings["groupID"], botSettings["lastSentPollID"]),
@@ -155,10 +169,14 @@ def schedule_poll_unpin():
 
 
 now = dt.datetime.utcnow()
-next_time = dt.datetime.timestamp(next_datetime(now, hour=botSettings["timeForPoll"]))
+print(f'Текущее время: {now}')
+next_time = next_datetime(now, botSettings["timeForPoll"], minute=0, second=0)
+print(f'Время следующего автоматического опроса: {next_time}')
 pollScheduler = sched.scheduler(time.time, time.sleep)
-pollScheduler.enterabs(next_time, 1, send_scheduled_poll)
-# pollScheduler.run()
+pollScheduler.enterabs(dt.datetime.timestamp(next_time), 1, send_scheduled_poll)
 
-
+print('bot polling started')
 bot.polling(True, 2)
+
+# pollScheduler.run(False)
+# print('scheduler started')
