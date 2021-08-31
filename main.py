@@ -107,4 +107,4 @@ def send_poll(chat_id: int):
 
 
 print("bot polling started")
-bot.polling(True, 2)
+bot.infinity_polling()
