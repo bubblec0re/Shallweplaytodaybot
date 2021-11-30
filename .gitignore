@@ -1,2 +1,3 @@
-*json*
-*.venv*
+messages.json
+.venv
+.vscode

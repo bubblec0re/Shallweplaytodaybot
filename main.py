@@ -1,7 +1,5 @@
 import json
 
-# import sched
-# import time
 import datetime as dt
 
 import telebot
