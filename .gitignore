@@ -1,5 +1,3 @@
-updates.json
-messages.json
-settings.json
+*.json
 .venv
 .vscode
