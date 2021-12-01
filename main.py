@@ -80,6 +80,8 @@ def poll_answers():
             answers = json.loads(f)
     except Exception:
         answers = ["Да", "Нет", "Не знаю"]
+        with open("answers.json", "w") as f:
+            json.dump(answers, f, ensure_ascii=False)
     return answers
 
 
