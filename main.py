@@ -106,11 +106,10 @@ def send_poll(chat_id: int):
     return sent_poll
 
 
-if bot_settings['group_id'] != None:
+if bot_settings["group_id"] != None:
     print("bot polling started")
     bot.infinity_polling()
 else:
     save_settings_to_file()
     print("Group ID not found. Fill in group_id in bot_settings.json and restart.")
     print("Exiting.")
-
