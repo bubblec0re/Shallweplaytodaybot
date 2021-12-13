@@ -13,7 +13,9 @@ try:
     with open("settings.json") as f:
         bot_settings = json.load(f)
 except Exception:
+
     bot_settings = {"group_id": None, "last_sent_poll_id": None, "last_manual_poll_time": 0, "bot_id": None}
+    
 poll_send_task_id = 0
 
 apihelper.SESSION_TIME_TO_LIVE = 5 * 60
