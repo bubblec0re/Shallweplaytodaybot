@@ -19,6 +19,7 @@ except Exception:
         "last_sent_poll_id": None,
         "last_manual_poll_time": 0,
         "bot_id": None,
+        "owner_id":None
     }
 
 
@@ -107,9 +108,15 @@ def send_poll(chat_id: int):
     save_settings_to_file()
     return sent_poll
 
+def notifyOnStartup():
+    bot.send_message(
+        bot_settings.owner_id,
+        """Бот запущен""",
+    )
 
 if bot_settings["group_id"] != None:
     print("bot polling started")
+    notifyOnStartup()
     bot.infinity_polling()
 else:
     save_settings_to_file()
