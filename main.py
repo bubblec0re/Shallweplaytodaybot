@@ -21,7 +21,6 @@ except Exception:
         "bot_id": None,
     }
 
-poll_send_task_id = 0
 
 apihelper.SESSION_TIME_TO_LIVE = 5 * 60
 bot = telebot.TeleBot(bot_settings.bot_id)
